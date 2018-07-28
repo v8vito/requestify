@@ -2,6 +2,7 @@ import errno
 import optparse
 import os
 import sys
+import re
 from jinja2 import Environment, PackageLoader
 from urlparse import urlparse
 
@@ -25,7 +26,7 @@ LANGUAGES = {
 SEPARATOR = "#" * 40
 
 
-def generate_request_code(request, selected_template):
+def generate_request_code(request, selected_template, proxy=None):
     """
     Generate script that makes HTTP request
 
@@ -90,6 +91,7 @@ def generate_request_code(request, selected_template):
         scheme=scheme,
         host=host,
         port=port,
+        proxy=proxy,
     )
 
 
@@ -99,6 +101,7 @@ def main():
     parser.add_option('-i', '--input', dest='input_file', type='string', help='specify input file containing raw HTTP request')
     parser.add_option('-o', '--output', dest='output_file', type='string', help='specify output file')
     parser.add_option('-l', '--language', dest='lang', type='string', help='specify programming language of the output script', default="python-requests")
+    parser.add_option('-p', '--proxy', dest='proxy', type='string', help='specify http(s) proxy to use, format is <host>:<port>', default="python-requests")
     (options, args) = parser.parse_args()
 
     # Input file
@@ -133,6 +136,18 @@ def main():
         exit(0)
     print "[*] Output script language: {}".format(options.lang)
 
+    # Set the HTTP proxy to use in requests
+    if options.proxy is not None:
+        if lang == "python":
+            valid_proxy = re.compile('([a-zA-Z0-9\-_\.]+):([0-9]{1,5})$')
+            if valid_proxy.match(options.proxy):
+                proxy = options.proxy
+            else:
+                print "[-] Please enter a valid proxy. The expected format is host:port"
+                exit(1)
+        else:
+            print "[-] Proxies are only supported in Python. Sorry."
+
     # Read and parse raw HTTP request
     try:
         raw_http_request = "".join(open(options.input_file, "r").readlines())
@@ -146,7 +161,7 @@ def main():
     request = HTTPRequest(raw_http_request)
     if request:
         # Generate source code that makes request
-        generated_code = generate_request_code(request, lang["template_file"])
+        generated_code = generate_request_code(request, lang["template_file"], proxy=options.proxy)
         print "\n{0} BEGIN GENERATED SCRIPT {0}\n".format(SEPARATOR)
         print generated_code
         print "\n{0} END GENERATED SCRIPT {0}\n".format(SEPARATOR)

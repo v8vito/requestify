@@ -18,6 +18,11 @@ cookies = {
 {%- endfor %}
 }
 
+proxies = { 
+    'http'  : 'http://{{ proxy }}', 
+    'https' : 'https://{{ proxy }}',
+}   
+
 # Prepare and send request
 req = requests.Request(
     method="{{ method }}",
@@ -28,7 +33,11 @@ req = requests.Request(
 )
 prepared_req = req.prepare()
 session = requests.Session()
+{% if proxy is defined %} 
+resp = session.send(prepared_req, proxies=proxies, verify=False)
+{% else %}
 resp = session.send(prepared_req)
+{% endif %}
 # print resp.status_code
 # print resp.text
 # print resp.headers

@@ -3,7 +3,7 @@ from StringIO import StringIO
 
 
 class HTTPRequest(BaseHTTPRequestHandler):
-    def __init__(self, raw_http_request):
+    def __init__(self, raw_http_request, proxy=None):
         self.rfile = StringIO(raw_http_request)
         self.raw_requestline = self.rfile.readline()
         self.parse_request()
